@@ -1,53 +1,57 @@
 
 sample:
   seed: 2024
-  batch_size: 50
-  num_mols: 100
-  save_traj_prob: 0.05
+  batch_size: 50 # 单次同时生成/处理多少个小分子
+  num_mols: 100 # 总共要生成/对接的小分子数量（这里是 100 个）
+  save_traj_prob: 0.05 # 保存轨迹的概率，0.05 表示每 20 个小分子中保存一个轨迹，用于可视化/分析
 
 
 data:
   protein_path: data/examples/dock/8C7Y_TXV_protein.pdb
   input_ligand: data/examples/dock/8C7Y_TXV_ligand_start_conf.sdf  # mol sdf file
   # input_ligand: CC(C)(C#N)c1cccc(C(=O)Nc2ccc(F)c(C(=O)c3c[nH]c4ncc(Cl)cc34)c2F)c1  # can also be SMILES
-  is_pep: False
+  is_pep: False # 判断Ligand是否为peptide，False则输出.sdf文件，True则输出.pdb文件。如不指定，则自动判断。
   pocket_args:
-    pocket_coord: [-8.2570, 85.1810, 19.0500]  # for extracting pocket
-    radius: 15
+    pocket_coord: [-8.2570, 85.1810, 19.0500]  # for extracting pocket, 口袋中心点坐标（一般来自参考配体或已知活性位点）
+    radius: 15 # 以该中心点为球心截取口袋的半径（单位 Å）
     # You can also use a reference ligand (smaller radius since mol is larger than a point)
     # ref_ligand_path: data/examples/dock/8C7Y_TXV_ligand.sdf  # for extracting pocket
     # radius: 10
-  pocmol_args:
-    data_id: dock_8C7Y_TXV
+  pocmol_args: # 给当前任务/数据一个标识信息
+    data_id: dock_8C7Y_TXV # 整个数据/任务的 ID，方便保存输出文件夹命名等
     pdbid: 8C7Y
 
 
 transforms:
-  featurizer_pocket:
-    center: [-8.2570, 85.1810, 19.0500]  # space center for denosing
+  featurizer_pocket: # 口袋特征化时使用的空间中心
+    center: [-8.2570, 85.1810, 19.0500]  # space center for denosing, 在扩散模型中, 通常会把坐标以这个点为中心进行平移/归一化, 利于模型学习与去噪
 
+# pocket_args.pocket_coord 用于 截取口袋区域, 口袋中心点坐标（一般来自参考配体或已知活性位点）
+# featurizer_pocket.center 用于 特征化与扩散过程的坐标中心对齐，这里设置成同一个点保证一致
 
 #  The following defines docking task (Gaussian noise)
 
 
 task:
-  name: dock
+  name: dock # 任务名是 dock，即配体对接任务
   transform:
-    name: dock
-    settings:
-      free: 1
-      flexible: 0
+    name: dock # 用的变换模块也是 dock，与任务匹配
+    settings: # free=1, flexible=0 表示采用高斯噪声：位置噪声为各向同性高斯噪声。更简单，适用于大多数情况，且性能更佳。
+      free: 1 # weight for Gaussian noise mode
+      flexible: 0 # weight for flexible noise mode
 
 
 noise:
-  name: dock
-  num_steps: 100
-  prior: from_train
-  level:
-    name: advance
-    min: 0.
+  name: dock # 噪声配置名称，与任务类型 dock 对应
+  num_steps: 100 # 扩散/去噪过程的时间步数，这里是 100 步
+  prior: from_train # 噪声分布的先验与训练时保持一致（用训练好的噪声调度策略）
+  level: # 控制噪声强度随步数的变化（类似扩散模型里的 schedule）
+    name: advance # 使用 advance 调度策略，表示噪声强度随步数线性增加
+    min: 0. # 噪声级别归一化范围 ([0, 1]), 0表示完全无噪声，1表示完全随机噪声
     max: 1.
-    step2level:
-      scale_start: 0.99999
-      scale_end: 0.00001
-      width: 3
+    step2level: # 描述“步数 → 噪声等级”的映射曲线参数
+      scale_start: 0.99999 # 初始步的噪声比例接近 1（非常强的噪声）
+      scale_end: 0.00001 # 最终步的噪声比例接近 0（几乎无噪声）
+      width: 3 # 曲线的陡峭程度，值越大越陡峭，噪声变化越快
+
+# 总结：模型一开始把配体坐标/构象“打散”到高噪声状态，然后在 100 步里逐步去噪，最后得到与口袋匹配的合理对接姿势

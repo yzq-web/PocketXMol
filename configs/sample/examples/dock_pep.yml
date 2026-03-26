@@ -11,8 +11,8 @@ data:
   input_ligand: pepseq_DTVDFFEVFL  # define peptide: pepseq_{xxxxx}
   is_pep: True
   pocket_args:
-    ref_ligand_path: data/examples/peptide/3bik_A_pocket_coord.sdf
-    radius: 20
+    ref_ligand_path: data/examples/peptide/3bik_A_pocket_coord.sdf # 提供ref ligand的坐标，用于截取口袋区域
+    radius: 20 # 以该中心点为球心截取口袋的半径（单位 Å）
   pocmol_args:
     data_id: dockpep_3bik
     pdbid: 3bik

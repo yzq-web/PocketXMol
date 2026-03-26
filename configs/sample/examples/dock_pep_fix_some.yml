@@ -33,10 +33,12 @@ task:
       free: 1
       flexible: 0
     # specify fixed atoms/residues (index counts from 0) in the input_ligand file
+    # 指定需要固定的原子/残基，在输入的 Ligand 文件中从0开始编号
+    # fix_some 固定的是 res/atom 的 3D 位置坐标，不涉及原子类型（docking 里类型本来就全固定）
     fix_some: # union of all the following:
-      res_bb: [0, 1]  # the backbone atoms of the residue with indeces 0 and 1
-      res_sc: [0]  #  the side-chain atoms of the residue with index 0
-      atom: [73, 74, 75, 76, 77, 78]  # the atoms with indices 73-78. i.e., the benzene of Phe (resiude index 8) in this example
+      res_bb: [0, 1]  # the backbone atoms of the residue with indeces 0 and 1，固定第0和第1位残基的主链原子（backbone），在dock过程中不会被移动/去噪
+      res_sc: [0]  #  the side-chain atoms of the residue with index 0，固定第0位残基的侧链原子（side-chain）
+      atom: [73, 74, 75, 76, 77, 78]  # the atoms with indices 73-78. i.e., the benzene of Phe (resiude index 8) in this example，直接按 原子index 固定一组具体原子，这里固定了第8位残基（苯丙氨酸）的苯环部分
 
 noise:
   name: dock
@@ -50,4 +52,4 @@ noise:
       scale_start: 0.99999
       scale_end: 0.00001
       width: 3
-  pre_process: fix_some
+  pre_process: fix_some # 在噪声/扩散预处理阶段，会根据 task.transform.fix_some 信息，对 固定的原子/残基做特殊处理（例如：不给这些原子加噪声，或在每一步把它们强制拉回原位置）

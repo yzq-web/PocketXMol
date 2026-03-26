@@ -20,17 +20,17 @@ data:
 transforms:
   featurizer_pocket:
     center: [-8.1603, 36.6972, 38.7714]  # space center for denosing
-  variable_mol_size:  # variable mol size
+  variable_mol_size:  # variable mol size，生成分子的原子数量可变
     name: variable_mol_size
     num_atoms_distri:
-      strategy: mol_atoms_based  # mol size from Normal(mean=28, std=2)
-      mean:
-        coef: 0
-        bias: 28
+      strategy: mol_atoms_based  # mol size from Normal(mean=28, std=2)，分子的原子数量从正态分布中采样
+      mean: # mu = bias + coef * N_input，其中 N_input 是 input_ligand 的原子数量
+        coef: 0 # coefficient for input mol size，如果提供了input_ligand，则可以使用input_ligand的原子数量作为均值
+        bias: 28 # constant term
       std:
         coef: 0
         bias: 2
-      min: 5
+      min: 5 # 生成的最小原子数量（防止采到过小的无意义分子）
 
 
 # The following defines sbdd task (refine-based)
@@ -38,30 +38,30 @@ transforms:
 task:
   name: sbdd
   transform:
-    name: ar
-    part1_pert: small
+    name: ar # auto-regressive refinement mode
+    part1_pert: small # small perturbation for existing atoms
 
 noise:
   name: maskfill
   num_steps: 100
-  ar_config:
+  ar_config:              # auto-regressive refinement settings
     strategy: refine
-    r: 3
-    threshold_node: 0.98
-    threshold_pos: 0.91
-    threshold_bond: 0.98
-    max_ar_step: 10
-    change_init_step: 1
+    r: 3                  # refinement ratio
+    threshold_node: 0.98  # convergence threshold for atom types
+    threshold_pos: 0.91   # convergence threshold for positions
+    threshold_bond: 0.98  # convergence threshold for bonds
+    max_ar_step: 10       # max refinement rounds
+    change_init_step: 1   # initial noise step for refinement rounds
   prior:
     part1: from_train
     part2: from_train
   level:
-    part1:
-      name: uniform
-      min: 0.6
+    part1:                # part1 (existing/known atoms)
+      name: uniform       # existing atoms retain substantial structure (noise level stays low)
+      min: 0.6            # high info level → existing atoms stay close to current state
       max: 1.0
-    part2:
-      name: advance
+    part2:                # part2 (newly generated atoms)
+      name: advance       # new atoms are generated from full noise.
       min: 0.0
       max: 1.0
       step2level:

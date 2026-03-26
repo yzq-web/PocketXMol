@@ -33,9 +33,9 @@ task:
   name: dock
   transform:
     name: dock
-    settings:
-      free: 0
-      flexible: 1
+    settings: # free=0, flexible=1 表示采用灵活噪声：噪声分解为平移、旋转和扭转分量。更有利于保持内部几何形状。
+      free: 0 # weight for Gaussian noise mode
+      flexible: 1 # weight for flexible noise mode
 
 
 noise:

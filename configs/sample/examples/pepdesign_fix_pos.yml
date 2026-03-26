@@ -29,7 +29,7 @@ transforms:
         bias: 1.8727
     # You need to add the side-chain atom indices that should not be removed during designing (backbone by default will not be removed)
     # You can open PyMol, select residues you want to fix, and run this in PyMol: `iterate (sele and sc.), print(rank, end=',')`
-    not_remove: [6,5,4,7,12,13,14,21,19,20, 73,74,75,76,77,78] # = res_sc + atom specified in fix_pos below.
+    not_remove: [6,5,4,7,12,13,14,21,19,20, 73,74,75,76,77,78] # = res_sc + atom specified in fix_pos below. 此处为 atom indices
   featurizer_pocket:
     center: [7.9130, -7.3910, -25.9240]  # space center for denosing
 
@@ -40,15 +40,16 @@ task:
   transform:
     name: pepdesign
     # specify fixed positions of atoms/residues (index counts from 0) in the input_ligand file
+    # fix_pos 固定的是 res/atom 的 3D 位置坐标 + 原子类型（以及相关键），即「既不移动，也不被重新设计」；代码里有一句注释说明「fix_pos 必须同时 fix type」
     fix_pos:
       res_bb: [0, 1, 8, 9] # backbone atoms of residues with indices 0-2 and 8-9 (sequence fragments DTV and FL in this example P73.pdb)
       res_sc: [0, 1]  # side-chain atoms of residues with indices 0-1 (residues DT in this example P73.pdb)
       atom: [73, 74, 75, 76, 77, 78]  # the atoms with indices 73-78 (benzene ring of PHE in this example P73.pdb)
     settings:
       mode:
-        full: 1
-        sc: 0
-        packing: 0
+        full: 1 # full peptide design (backbone dock + side-chain design)，用于de novo设计完整的peptide
+        sc: 0 # side-chain design (backbone fixed)，用于设计侧链
+        packing: 0 # side-chain packing (given backbone + side-chain atom types)，用于设计侧链构象
 
 
 noise:

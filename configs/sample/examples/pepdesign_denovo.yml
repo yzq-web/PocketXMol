@@ -19,16 +19,16 @@ data:
 
 
 transforms:
-  variable_sc_size:  # distributions of number of side-chain atoms
+  variable_sc_size:  # distributions of number of side-chain atoms 控制生成peptide的侧链原子数量分布
     name: variable_sc_size
     applicable_tasks: ['pepdesign']
     num_atoms_distri:
-      mean: 8
+      mean: 8 # 每个residue生成的侧链原子数量均值为8
       std:
         coef: 0.3817
         bias: 1.8727
   featurizer_pocket:
-    center: [7.9130, -7.3910, -25.9240]  # space center for denoising
+    center: [7.9130, -7.3910, -25.9240]  # space center for denosing
 
 
 #  The following defines the peptide design task
@@ -38,9 +38,9 @@ task:
     name: pepdesign
     settings:
       mode:
-        full: 1
-        sc: 0
-        packing: 0
+        full: 1 # full peptide design (backbone dock + side-chain design)，用于de novo设计完整的peptide
+        sc: 0 # side-chain design (backbone fixed)，backbone固定，用于设计侧链
+        packing: 0 # side-chain packing (given backbone + side-chain atom types)，用于设计侧链构象
 
 
 noise:

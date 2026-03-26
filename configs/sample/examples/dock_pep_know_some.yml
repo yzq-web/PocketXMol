@@ -49,9 +49,11 @@ noise:
   post_process:
     name: know_some
     # specify atom indices (index counts from 0) and restricted sphere spaces
-    atom_space:
-      - atom: 0
+    # 某些原子只能出现在指定的小球空间里（known spaces）
+    # 作用：这些原子可以动、可以被加噪，但每一步或最终会被“拉回/投影”到限定区域内，更像“软约束/空间盒子”
+    atom_space: # 定义若干“受约束原子 + 空间球”组合，每个条目都是一个约束
+      - atom: 0 # Ligand中的第0个原子（index从0开始），只能出现在以[-3.522, -13.459, -21.684]为中心，半径2 Å的小球空间里
         coord: [-3.522, -13.459, -21.684]
         radius: 2
-      - atom: 4  # if not set `coord`, use the corresponding coord in the input_ligand file
+      - atom: 4  # if not set `coord`, use the corresponding coord in the input_ligand file，如果不手动给出中心坐标，就用该原子在 input_ligand（也就是 P73.pdb）中的初始坐标作为球心
         radius: 2
