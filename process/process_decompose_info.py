@@ -34,7 +34,7 @@ def get_decompose_info(df, mol_path, save_path, mols_dir, decom_list):
             continue
         
         # # get mol
-        mol = get_mol_from_data(mol_data, mols_dir, train_txn, val_txn)
+        mol = get_mol_from_data(mol_data, mols_dir, train_txn, val_txn) # load mol from sdf
 
         # # get decompose info
         result_dict = {}

@@ -61,7 +61,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     db_name = args.db_name
-    if db_name == 'apep':
+    if db_name in ['apep', 'bpep', 'cpep', 'peptest']:
         path_df = f'./data_train/{db_name}/dfs/meta_uni.csv'
         root = f'./data_train/{db_name}/files'
         proteins_dir = 'proteins'
@@ -82,11 +82,11 @@ if __name__ == '__main__':
     data_id_list = df['data_id'].values
     print('Found %d protein-ligand pairs.' % len(data_id_list))
     data_list = [{
-        'data_id': data_id,
+        'data_id': data_id, # e.g. apep_0
         'protein_path': os.path.join(proteins_dir, data_id + protein_name_appendix),
         'mol_path': os.path.join(mols_dir, f'{data_id}_mol.sdf'),
         'pocket_path': os.path.join(save_dir, f'{data_id}_pocket.pdb')
-    } for data_id in data_id_list]
+    } for data_id in data_id_list] # 只遍历df['data_id']中的数据, 不会处理path中的其他文件
 
     pool = mp.Pool(args.num_workers)
     result_list = []

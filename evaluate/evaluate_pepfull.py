@@ -171,6 +171,9 @@ def evaluate_one_input(gen_info):
     
     result_list = []
     gt_path_mol = gt_path.replace('peptides', 'mols').replace('_pep.pdb', '_mol.sdf')
+
+    # update: get ss of gt_pdb
+    ss_gt = get_ss(gt_path)
     for i in range(len(gen_info['file_path'])):
         # succ
         if 'tag' in gen_info:
@@ -218,6 +221,7 @@ def evaluate_one_input(gen_info):
             'seq_iden': seq_iden,
             'rmsd': rmsd,
             'ss': ss,
+            'ss_gt': ss_gt,
             'phi': phi,
             'psi': psi,
         })

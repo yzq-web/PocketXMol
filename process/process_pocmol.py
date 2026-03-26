@@ -33,15 +33,17 @@ def process(df, pockets_dir, mols_dir, lmdb_path):
             # load mol
             mol = Chem.MolFromMolFile(os.path.join(mols_dir, data_id + '_mol.sdf'))
             # build mol data
-            ligand_dict = parse_conf_list([mol], smiles=smiles)
+            ligand_dict = parse_conf_list([mol], smiles=smiles) # 返回ligand的element, bond_index等信息; 以第一个构象为基准, 保留相同的构象
             if ligand_dict['num_confs'] == 0:
                 raise ValueError('No conformers found')
 
             # load pocket
             with open(os.path.join(pockets_dir, data_id + '_pocket.pdb'), 'r') as f:
                 pdb_bloack = f.read()
-            pocket_dict = PDBProtein(pdb_bloack).to_dict_atom()
-
+            pocket_dict = PDBProtein(pdb_bloack).to_dict_atom() # 返回pocket的element, pos, is_backbone, atom_name, atom_to_aa_type等信息
+            
+            # Initialize PocketMolData
+            # 将pocket_dict和mol_dict中的value转换成tensor, 并添加至PocketMolData对象
             data = PocketMolData.from_pocket_mol_dicts(
                 pocket_dict=torchify_dict(pocket_dict),
                 mol_dict=torchify_dict(ligand_dict),
@@ -50,7 +52,7 @@ def process(df, pockets_dir, mols_dir, lmdb_path):
             data.data_id = data_id
             data.smiles = smiles
             
-            db.add_one(data_id, data)
+            db.add_one(data_id, data) # 将PocketMolData对象添加至lmdb
         except KeyboardInterrupt:
             break
         except Exception as e:
@@ -71,7 +73,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     db_name = args.db_name
-    if db_name == 'apep':
+    if db_name in ['apep', 'bpep', 'cpep', 'peptest']:
         # data dir
         pockets_dir = f'data_train/{db_name}/files/pockets10'
         mols_dir = f'data_train/{db_name}/files/mols'

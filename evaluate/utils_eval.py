@@ -14,7 +14,7 @@ import tempfile
 from copy import deepcopy
 
 # DockQ executable path (set to your installation location)
-PATH_DOCKQ = None  # e.g., '/path/to/DockQ/DockQ.py'
+PATH_DOCKQ = '/home/yangziqing/software/DockQ'  # e.g., '/path/to/DockQ/DockQ.py'
 assert PATH_DOCKQ is not None, "Please set PATH_DOCKQ to your DockQ installation path."
 
 def combine_chains(pdb_file_path, combined_chain_id='R', bias=200, save_path=None):

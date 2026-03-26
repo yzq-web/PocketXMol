@@ -41,9 +41,9 @@ def process(df, ligand_dir, lmdb_path, ref_path):
             
             data = process_peptide(ligand_path, data_id)
             # check atom consistency
-            pos_ref = ref_db[data_id]['pos_all_confs'][0]
+            pos_ref = ref_db[data_id]['pos_all_confs'][0] # 以第一个构象为reference
             assert data['peptide_pos'].shape[0] == pos_ref.shape[0], 'Num of atom mismatch'
-            assert torch.allclose(data['peptide_pos'], pos_ref), 'Atom mismatch, delta pos: %s' % (data['peptide_pos'] - pos_ref).abs().max()
+            assert torch.allclose(data['peptide_pos'], pos_ref), 'Atom mismatch, delta pos: %s' % (data['peptide_pos'] - pos_ref).abs().max() # 判断peptide.pdb和mol.sdf的原子坐标是否一致, 相对误差 rtol=1e-05, 绝对误差 atol=1e-08
             db.add_one(data_id, data)
         except KeyboardInterrupt:
             break
