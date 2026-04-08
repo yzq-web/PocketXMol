@@ -42,6 +42,11 @@ def pdb_to_sdf(input_pdb, output_sdf):
 def main():
     parser = argparse.ArgumentParser(description="Convert peptide .pdb into .sdf")
     parser.add_argument('--db_name', type=str, required=True, help="Database name (e.g., cpep)")
+    parser.add_argument(
+        '--from_meta',
+        action='store_true',
+        help="If set, read dfs/meta_uni_full.csv and convert only listed data_id peptides.",
+    )
     args = parser.parse_args()
     
     db_name = args.db_name
@@ -53,7 +58,27 @@ def main():
     os.makedirs(mols_path, exist_ok=True)
 
     # Convert pdb to sdf
-    peptide_files = [f for f in os.listdir(peptides_path) if f.endswith('.pdb')]
+    if args.from_meta:
+        meta_file = os.path.join(df_path, 'meta_uni_full.csv')
+        if not os.path.exists(meta_file):
+            raise FileNotFoundError(f"meta_uni_full.csv not found: {meta_file}")
+        df_meta = pd.read_csv(meta_file)
+        if 'data_id' not in df_meta.columns:
+            raise KeyError("Column 'data_id' not found in meta_uni_full.csv")
+
+        peptide_files = []
+        for data_id in df_meta['data_id'].dropna().astype(str).tolist():
+            pdb_name = f"{data_id}_pep.pdb"
+            pdb_path = os.path.join(peptides_path, pdb_name)
+            if os.path.exists(pdb_path):
+                peptide_files.append(pdb_name)
+            else:
+                print(f"Skipping missing peptide file: {pdb_name}")
+        print(f"Using --from_meta mode, total peptide files: {len(peptide_files)}")
+    else:
+        peptide_files = [f for f in os.listdir(peptides_path) if f.endswith('.pdb')]
+        print(f"Using directory scan mode, total peptide files: {len(peptide_files)}")
+
     mol_dict = {}
     for pbd_file in peptide_files:
         data_id = pbd_file.replace('_pep.pdb', '')

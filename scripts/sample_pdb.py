@@ -48,7 +48,7 @@ if __name__ == '__main__':
     config = make_config(args.config_task, args.config_model)
     if args.config_model is not None:
         config_name = os.path.basename(args.config_task).replace('.yml', '') 
-        config_name += '_' + os.path.basename(args.config_model).replace('.yml', '')
+        config_name += '_' + os.path.basename(args.config_model).replace('.yml', '') # base_pxm
     else:
         config_name = os.path.basename(args.config_task)[:os.path.basename(args.config_task).rfind('.')]
     seed = config.sample.seed # + np.sum([ord(s) for s in args.outdir]+[ord(s) for s in args.config_task])
@@ -65,7 +65,7 @@ if __name__ == '__main__':
     num_mols = getattr(config.sample, 'num_mols', int(1e10))
     num_repeats = getattr(config.sample, 'num_repeats', 1)
     # # Logging
-    if is_vscode:  # for debug using vscode
+    if False: # is_vscode:  # for debug using vscode
         dir_names= os.path.dirname(args.config_task).split('/')
         try:
             is_sample = dir_names.index('sample')
@@ -91,7 +91,7 @@ if __name__ == '__main__':
                 else:
                     print('Found existing result dir:', file)
                     # exit()
-    log_dir = get_new_log_dir(log_root, prefix=config_name)
+    log_dir = get_new_log_dir(log_root, prefix=config_name) # base_pxm_<datetime>
     logger = get_logger('sample', log_dir)
     writer = torch.utils.tensorboard.SummaryWriter(log_dir)
     logger.info('Load from %s...' % config.model.checkpoint)
@@ -112,21 +112,21 @@ if __name__ == '__main__':
                 config.transforms.get(samp_trans)
             )
     dm = DataModule(train_config)
-    featurizer_list = dm.get_featurizers()
+    featurizer_list = dm.get_featurizers() # [FeaturizePocket, FeaturizeMol]
     featurizer = featurizer_list[-1]  # for mol decoding
-    in_dims = dm.get_in_dims()
-    task_trans = get_transforms(config.task.transform)
+    in_dims = dm.get_in_dims() # {'num_node_types': 12, 'num_edge_types': 6, 'pocket_in_dim': 25}
+    task_trans = get_transforms(config.task.transform) # e.g. PepdesignTransform(config=config.task.transform)
     noiser = get_sample_noiser(config.noise, in_dims['num_node_types'], in_dims['num_edge_types'],
-                               mode='sample',device=args.device, ref_config=train_config.noise)
-    if 'variable_sc_size' in getattr(config, 'transforms', []):
+                               mode='sample',device=args.device, ref_config=train_config.noise) # e.g. PepdesignSampleNoiser(config=config.noise)
+    if 'variable_sc_size' in getattr(config, 'transforms', []): # e.g. VariableScSize
         transforms = featurizer_list + [
-            get_transforms(config.transforms.variable_sc_size), task_trans]
+            get_transforms(config.transforms.variable_sc_size), task_trans] # list of initialized transforms classes
     else:
         transforms = featurizer_list + [task_trans]
     addition_transforms = [get_transforms(tr) for tr in config.data.get('transforms', [])]
     transforms = transforms + addition_transforms
-    transforms = Compose(transforms)
-    follow_batch = sum([getattr(t, 'follow_batch', []) for t in transforms.transforms], [])
+    transforms = Compose(transforms) # compose into pipeline
+    follow_batch = sum([getattr(t, 'follow_batch', []) for t in transforms.transforms], []) # e.g. ['pocket_pos', 'node_type', 'halfedge_type']. transforms.transforms: list of initialized transforms classes, sum: for flattening the list
     exclude_keys = sum([getattr(t, 'exclude_keys', []) for t in transforms.transforms], [])
     
     # # Data loader
@@ -136,7 +136,7 @@ if __name__ == '__main__':
     test_set = TestTaskDataset(data_cfg.dataset, config.task,
                                mode='test',
                                split=getattr(data_cfg, 'split', None),
-                               transforms=transforms)
+                               transforms=transforms) # for batch in test_loader: 调用ForeverTaskDataset.__getitem__(self, index), 运行transforms(data)
     test_loader = DataLoader(test_set, batch_size, shuffle=args.shuffle,
                             num_workers = num_workers,
                             pin_memory = train_config.train.pin_memory,
@@ -146,7 +146,7 @@ if __name__ == '__main__':
     logger.info('Loading diffusion model...')
     if train_config.model.name == 'pm_asym_denoiser':
         model = PMAsymDenoiser(config=train_config.model, **in_dims).to(args.device)
-    model.load_state_dict({k[6:]:value for k, value in ckpt['state_dict'].items() if k.startswith('model.')}) # prefix is 'model'
+    model.load_state_dict({k[6:]:value for k, value in ckpt['state_dict'].items() if k.startswith('model.')}) # prefix is 'model': 去掉ckpt中的'model.'前缀, 与PMAsymDenoiser的state_dict的key匹配
     model.eval()
 
     pool = EasyDict({

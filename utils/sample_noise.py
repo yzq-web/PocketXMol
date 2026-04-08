@@ -1509,14 +1509,14 @@ class PepdesignSampleNoiser(BaseSampleNoiser):
             mode, device, ref_config, **kwargs)
         
         # define prior
-        prior_bb = config.prior.bb if config.prior.bb != 'from_train' else self.ref_prior_config.bb
-        self.prior_bb = MolPrior(prior_bb, num_node_types, num_edge_types).to(device)
-        prior_sc = config.prior.sc if config.prior.sc != 'from_train' else self.ref_prior_config.sc
-        self.prior_sc = MolPrior(prior_sc, num_node_types, num_edge_types).to(device)
+        prior_bb = config.prior.bb if config.prior.bb != 'from_train' else self.ref_prior_config.bb # train_config.noise.prior.bb
+        self.prior_bb = MolPrior(prior_bb, num_node_types, num_edge_types).to(device) # initialize: prior_bb.pos
+        prior_sc = config.prior.sc if config.prior.sc != 'from_train' else self.ref_prior_config.sc # train_config.noise.prior.sc
+        self.prior_sc = MolPrior(prior_sc, num_node_types, num_edge_types).to(device) # initialize: prior_sc.pos, prior_sc.node, prior_sc.edge
 
         # define info level
-        self.level_bb = MolInfoLevel(config.level.bb, device=device, mode=mode)
-        self.level_sc = MolInfoLevel(config.level.sc, device=device, mode=mode)
+        self.level_bb = MolInfoLevel(config.level.bb, device=device, mode=mode) # config.noise.level.bb
+        self.level_sc = MolInfoLevel(config.level.sc, device=device, mode=mode) # config.noise.level.sc
 
     def sample_level(self, step, batch):
         

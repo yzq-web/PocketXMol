@@ -8,13 +8,13 @@ from utils.motion import RobustAngleSO3Distribution, apply_axis_angle_rotation,\
 from models.corrector import kabsch_flatten
 
 PRIOR_DICT = {}
-def register_prior(name):
+def register_prior(name): # 将prior类注册到PRIOR_DICT字典
     def decorator(cls):
         PRIOR_DICT[name] = cls
         return cls
     return decorator
 
-def get_prior(config, *args, **kwargs):
+def get_prior(config, *args, **kwargs): # 通过config完成prior类的实例化
     if config is None:
         return None
     name = config.name
@@ -33,10 +33,10 @@ class MolPrior(nn.Module):
         self.num_edge_types = num_edge_types
         self.pos_only = pos_only or getattr(config, 'pos_only', False)
         
-        self.pos = get_prior(config.pos)
+        self.pos = get_prior(config.pos) # e.g. AllPosPrior(config=config.pos) : for bb, sc
         if not self.pos_only:
-            self.node = get_prior(config.node, num_classes=num_node_types)
-            self.halfedge = get_prior(config.edge, num_classes=num_edge_types)
+            self.node = get_prior(config.node, num_classes=num_node_types) # e.g. CategoricalPrior(config=config.node) : for sc
+            self.halfedge = get_prior(config.edge, num_classes=num_edge_types) # e.g. CategoricalPrior(config=config.edge) : for sc
     
     @torch.no_grad()
     def add_noise(self, node_type, node_pos, halfedge_type,
@@ -57,7 +57,7 @@ class AllPosPrior(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.config = config
-        self.pos_prior = get_prior(getattr(config, 'pos', None))
+        self.pos_prior = get_prior(getattr(config, 'pos', None)) # e.g. GaussianExplodePrior(config=config.pos)
         self.translation_prior = get_prior(getattr(config, 'translation', None))
         self.rotation_prior = get_prior(getattr(config, 'rotation', None))
         self.torsional_prior = get_prior(getattr(config, 'torsional', None))
@@ -276,7 +276,7 @@ class GaussianExplodePrior(nn.Module):
         self.config = config
         sigma_max = getattr(config, 'sigma_max', 1) 
         # self.sigma_max = nn.Parameter(torch.tensor(sigma_max), requires_grad=False)
-        self.register_buffer('sigma_max', torch.tensor(sigma_max))
+        self.register_buffer('sigma_max', torch.tensor(sigma_max)) # super parameter, not trainable
         self.sigma_func = getattr(config, 'sigma_func', None)
         
     @torch.no_grad()
@@ -356,7 +356,7 @@ class CategoricalPrior(nn.Module):
         prior_type = config.prior_type
         prior_probs = getattr(config, 'prior_probs', None)
         probs = self.get_prior(prior_type, prior_probs)
-        self.prior_probs = nn.Parameter(probs, requires_grad=False)
+        self.prior_probs = nn.Parameter(probs, requires_grad=False) # prior_probs, not trainable
         
     def get_prior(self, prior_type, prior_probs):
         if prior_type == 'uniform':
@@ -366,7 +366,7 @@ class CategoricalPrior(nn.Module):
             probs[-1] = 1.
         elif prior_type == 'tomask_half':
             probs = torch.zeros(self.num_classes)
-            probs[-1] = 0.5
+            probs[-1] = 0.5 # the last is mask
             probs[:-1] = 0.5 / (self.num_classes - 1)
         elif prior_type == 'predefined':
             assert prior_probs is not None, 'Error: prior_probs is None and prior_type is predefined'

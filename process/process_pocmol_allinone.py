@@ -59,6 +59,11 @@ if __name__ == '__main__':
         pro_dir = f'data_train/{db_name}/files/proteins'
         save_path = f'data_train/{db_name}/lmdb/pocmol10.lmdb'
         df_use = pd.read_csv(f'data_train/{db_name}/dfs/meta_filter.csv')
+    elif db_name in ['apep', 'bpep', 'cpep', 'pepmerge']:
+        mols_dir = f'data_train/{db_name}/files/mols'
+        pro_dir = f'data_train/{db_name}/files/proteins'
+        save_path = f'data_train/{db_name}/lmdb/pocmol10.lmdb'
+        df_use = pd.read_csv(f'data_train/{db_name}/dfs/meta_uni.csv')
     else:
         raise NotImplementedError(f'unknown {db_name}')
     

@@ -25,16 +25,16 @@ def combine_chains(pdb_file_path, combined_chain_id='R', bias=200, save_path=Non
     # combine all residue in one chain
     combined_chain = Chain.Chain(combined_chain_id)
     for i_chain, chain in enumerate(structure):
-        start_index_chain = next(chain.get_residues()).id[1]
+        start_index_chain = next(chain.get_residues()).id[1] # 获取当前链第一个残基的编号，作为该链的序号起点
         bias_insertion = 0
         for residue in chain:
             residue.detach_parent()
             if residue.id[2] != ' ':
                 bias_insertion += 1
             if i_chain == 0:
-                index = residue.id[1] - start_index_chain + 1 + bias_insertion
+                index = residue.id[1] - start_index_chain + 1 + bias_insertion # 第一条链(从1开始编号): 残基新编号 = 当前id - 起始id + 1 + 插入码偏置
             else:
-                index = residue.id[1] - start_index_chain + 1 + bias_insertion + (bias + last_index)
+                index = residue.id[1] - start_index_chain + 1 + bias_insertion + (bias + last_index) # 非第一条链(从bias+上一条链的最后一个残基编号开始编号): 当前id - 起始id + 1 + 总偏移（bias + 上一条链最后残基的编号）
             residue.id = (residue.id[0], index, ' ')
             combined_chain.add(residue)
         last_index = residue.id[1]

@@ -95,7 +95,7 @@ def process_meta(df, peptide_data, protein_data, bad_data_ids):
             df.loc[idx, 'pro_seq'] = protein_data[data_id]['rec_seqs']
     return df
 
-def filter_meta(df):
+def filter_meta(df, use_len_filter=True):
     df = df.copy()
     df['len_pep'] = df['pep_seq'].fillna('').str.len() # 使用pep_seq重新计算len_pep
     mask = (
@@ -104,15 +104,20 @@ def filter_meta(df):
         & (df['pass_bond'] == True)
         & (df['error_mol'] == False)
         & (df['bad_peptide'] == False)
-        & (df['len_pep'] > 3)
-        & (df['len_pep'] < 20)
     )
+    if use_len_filter:
+        mask = mask & (df['len_pep'] > 3) & (df['len_pep'] < 20)
     print(f"Filtered {df[~mask].shape[0]} out of {df.shape[0]} entries")
     return df[mask]
 
 def main():
     parser = argparse.ArgumentParser(description="Filter PDB files for Peptide-Protein complexes.")
     parser.add_argument('--db_name', type=str, required=True, help="Database name (e.g., cpep)")
+    parser.add_argument(
+        '--no_len_filter',
+        action='store_false',
+        help="Disable peptide length filtering (len_pep > 3 and len_pep < 20).",
+    )
     args = parser.parse_args()
     
     # Path definition
@@ -138,7 +143,7 @@ def main():
     col_use = ['data_id', 'pdbid', 'pep_chainid', 'pro_chainid', 'pep_seq', 'pro_seq', 'smiles', 'isomeric_smiles']
     df_full = df[col_use].copy()
     # Meta filter
-    df_filter = filter_meta(df)
+    df_filter = filter_meta(df, use_len_filter=args.no_len_filter)
     df_full['pass'] = df_full['data_id'].isin(df_filter['data_id']).values
 
     df_full.to_csv(os.path.join(df_dir, "meta_uni_full.csv"), index=False)

@@ -1,0 +1,5 @@
+,hydrophobic_interactions_ratio,hydrogen_bonds_ratio,water_bridges_ratio,salt_bridges_ratio,pi_stacks_ratio,pi_cation_interactions_ratio,halogen_bonds_ratio,metal_complexes_ratio
+bpep,47.08%,43.73%,0.00%,6.82%,0.90%,1.47%,0.00%,0.00%
+cpep,51.48%,42.07%,0.00%,5.78%,0.67%,0.00%,0.00%,0.00%
+pepbdb,49.75%,42.49%,0.00%,4.94%,1.99%,0.81%,0.00%,0.00%
+pepmerge,44.71%,42.87%,0.00%,9.28%,1.23%,1.92%,0.00%,0.00%

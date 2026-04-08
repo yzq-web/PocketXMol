@@ -182,7 +182,7 @@ class TestTaskDataset(Dataset):
         return self.forever_dataset[index]
     
     def __len__(self):
-        return self.forever_dataset.task_db_size(self.forever_dataset.task_dbs[0])
+        return self.forever_dataset.task_db_size(self.forever_dataset.task_dbs[0]) # only one task_db for test
         # return self.forever_dataset.total_size
     
 
@@ -240,7 +240,7 @@ class ForeverTaskDataset(IterableDataset):
         else:
             task = task_db_weights['name']
             db_name = task_db_weights['db']
-            self.task_dbs = [(task, db_name)]
+            self.task_dbs = [(task, db_name)] # e.g. [('pepdesign', 'pepbdb')]
             
 
         # path and root
@@ -266,7 +266,7 @@ class ForeverTaskDataset(IterableDataset):
     def setup(self, set_index=False, set_db=False, set_iter=False,
               ):
         if set_index:
-            # setup index
+            # setup index - load assembly_path
             if self.assembly_path.endswith('.csv'):  # for test only. use the data_id columns
                 df_ass = pd.read_csv(self.assembly_path)
                 data_id_list = df_ass['data_id'].values
@@ -297,11 +297,11 @@ class ForeverTaskDataset(IterableDataset):
             self.catalog_dict = catalog_dict
 
         if set_db:
-            # load db
+            # load db - lmdb
             db_dict = {}
             for db_config in self.dbs_config:
                 db_name = db_config.name
-                db_dict[db_name] = SingleDatabase(db_config, self.root)
+                db_dict[db_name] = SingleDatabase(db_config, self.root) # {'pepbdb': {'pocmol10': LMDBDatabase, 'peptide': LMDBDatabase}}
                 # db_dict[db_name] = DB_DICT[db_name](db_config, self.root)
             self.db_dict = db_dict
 
@@ -387,7 +387,7 @@ class ForeverTaskDataset(IterableDataset):
             key = f'mols/{data_id}'
         elif db_name in ['apep']:
             key = f'pocmol10/{data_id};torsion/{data_id};decom/{data_id};peptide/{data_id}'
-        elif db_name in ['pepbdb', 'qbpep']:
+        elif db_name in ['pepbdb', 'qbpep', 'bpep', 'cpep', 'pepmerge']:
             key = f'pocmol10/{data_id};peptide/{data_id}'
         elif db_name in ['poseb', 'poseboff']:
             key = f'pocmol10/{data_id}'
@@ -429,10 +429,10 @@ class ForeverTaskDataset(IterableDataset):
         key = self.get_data_key(task, db_name, data_id)
         
         # select data
-        data = self.db_dict[db_name][key]
+        data = self.db_dict[db_name][key] # SingleDatabase.__getitem__(self, key), e.g. merged data from pocmol10.lmdb and peptide.lmdb
         data.update({'task': task, 'db':db_name, 'key': key})
         if self.transforms is not None:
-            data = self.transforms(data)
+            data = self.transforms(data) # transform data, e.g. [FeaturizePocket, FeaturizeMol, VariableScSize, PepdesignTransform] for pepdesign
         #     data, level_dict = self.transforms(data)
         # if True:
         #     import time
@@ -577,7 +577,7 @@ class SingleDatabase(Dataset): # modify from Drug3DDataset. directly the keys
                 #     'You must fetch mols or pocmol lmdb as the first lmdb since it contains torch.Data'
                 data = fetch
             else:
-                data.update(fetch)
+                data.update(fetch) # e.g. pepdesign: 合并pocmol10.lmdb和peptide.lmdb的数据
         
         return data
 

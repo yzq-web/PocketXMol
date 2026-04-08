@@ -7,6 +7,43 @@ STANDARD_AA = {
     'LEU', 'LYS', 'MET', 'PHE', 'PRO', 'SER', 'THR', 'TRP', 'TYR', 'VAL'
 }
 
+
+def parse_chain_stats_from_pdb(pdb_path):
+    """
+    Parse minimal chain/meta info from an existing chain-level PDB file.
+    Used for datasets that already provide peptides/proteins folders.
+    """
+    atom_lines = []
+    residues = []
+    residues_seen = set()
+    chains = []
+    chains_seen = set()
+
+    with open(pdb_path, 'r') as f:
+        for line in f:
+            if not line.startswith(('ATOM', 'HETATM')):
+                continue
+            atom_lines.append(line)
+            res_name = line[17:20].strip().upper()
+            chain_id = line[21:22].strip()
+            res_seq = line[22:26].strip()
+            ins_code = line[26:27].strip()
+            key = (chain_id, res_seq, ins_code, res_name)
+            if key not in residues_seen:
+                residues_seen.add(key)
+                residues.append(res_name)
+            if chain_id and chain_id not in chains_seen:
+                chains_seen.add(chain_id)
+                chains.append(chain_id)
+
+    nonstd = sum(1 for r in residues if r not in STANDARD_AA)
+    return {
+        'n_atoms': len(atom_lines),
+        'res_count': len(residues),
+        'chain_ids': chains,
+        'nonstd_res_count': nonstd,
+    }
+
 def extract_pdb_info(input_pdb, peptides_path, proteins_path, db_name, peptide_threshold=50):
     filename = os.path.basename(input_pdb)
     pdbid = filename.split('.')[0]
@@ -117,6 +154,52 @@ def extract_pdb_info(input_pdb, peptides_path, proteins_path, db_name, peptide_t
         
     return data_entry
 
+
+def extract_meta_from_pdblist(pdblist_path, peptides_path, proteins_path, db_name):
+    """
+    Build an initial meta table from test_names.txt plus existing
+    peptides/proteins files.
+    """
+    if not os.path.exists(pdblist_path):
+        raise FileNotFoundError(f"pdblist file not found: {pdblist_path}")
+
+    all_results = []
+    with open(pdblist_path, 'r') as f:
+        sample_names = [line.strip() for line in f if line.strip()]
+
+    print(f"Starting processing {len(sample_names)} entries from {pdblist_path}")
+    for sample in sample_names:
+        data_id = f"{db_name}_{sample}"
+        pep_path = os.path.join(peptides_path, f"{data_id}_pep.pdb")
+        pro_path = os.path.join(proteins_path, f"{data_id}_pro.pdb")
+
+        if not os.path.exists(pep_path) or not os.path.exists(pro_path):
+            print(f"Skipping (missing file): {sample}")
+            continue
+
+        pep_stats = parse_chain_stats_from_pdb(pep_path)
+        pro_stats = parse_chain_stats_from_pdb(pro_path)
+
+        # sample format like 1aze_B -> pdbid=1aze, chain=B
+        sample_parts = sample.split('_')
+        pdbid = sample_parts[0]
+        pep_chain_guess = sample_parts[-1] if len(sample_parts) > 1 else ''
+
+        entry = {
+            "data_id": data_id,
+            "pdbid": pdbid,
+            "pep_chainid": ";".join(pep_stats['chain_ids']) if pep_stats['chain_ids'] else pep_chain_guess,
+            "len_pep": str(pep_stats['res_count']),
+            "n_atoms_pep": str(pep_stats['n_atoms']),
+            "pro_chainid": ";".join(pro_stats['chain_ids']),
+            "n_atoms_pro": str(pro_stats['n_atoms']),
+            "nonstd_res_pep": str(pep_stats['nonstd_res_count']),
+        }
+        all_results.append(entry)
+        print(f"Successfully processed: {sample}")
+
+    return all_results
+
 def main():
     parser = argparse.ArgumentParser(description="Process PDB files for Peptide-Protein complexes.")
     parser.add_argument('--db_name', type=str, required=True, help="Database name (e.g., cpep)")
@@ -130,26 +213,39 @@ def main():
     pdbs_path = os.path.join(root, 'pdbs')
     peptides_path = os.path.join(root, 'peptides')
     proteins_path = os.path.join(root, 'proteins')
+    pdblist_path = os.path.join(df_path, 'test_names.txt')
     
     os.makedirs(df_path, exist_ok=True)
     os.makedirs(peptides_path, exist_ok=True)
     os.makedirs(proteins_path, exist_ok=True)
     
-    # PDBs processing
+    # Explicit routing by db_name
     all_results = []
-    pdb_files = [f for f in os.listdir(pdbs_path) if f.endswith('.pdb')]
-    
-    print(f"Starting processing {len(pdb_files)} files")
-    
-    for filename in pdb_files:
-        input_path = os.path.join(pdbs_path, filename)
-        
-        try:
-            entry = extract_pdb_info(input_path, peptides_path, proteins_path, db_name)
-            all_results.append(entry)
-            print(f"Successfully processed: {filename}")
-        except Exception as e:
-            print(f"Error processing {filename}: {e}")
+    if db_name in ['bpep', 'cpep']:
+        if not os.path.exists(pdbs_path):
+            raise FileNotFoundError(f"pdbs folder not found: {pdbs_path}")
+        pdb_files = [f for f in os.listdir(pdbs_path) if f.endswith('.pdb')]
+        print(f"Processing {len(pdb_files)} pdb files for db_name={db_name}")
+        for filename in pdb_files:
+            input_path = os.path.join(pdbs_path, filename)
+            try:
+                entry = extract_pdb_info(input_path, peptides_path, proteins_path, db_name)
+                all_results.append(entry)
+                print(f"Successfully processed: {filename}")
+            except Exception as e:
+                print(f"Error processing {filename}: {e}")
+
+    elif db_name == 'pepmerge':
+        print("Using pepmerge flow from test_names.txt + existing peptides/proteins")
+        all_results = extract_meta_from_pdblist(
+            pdblist_path, peptides_path, proteins_path, db_name
+        )
+
+    else:
+        raise ValueError(
+            f"Unsupported db_name: {db_name}. "
+            "Expected one of ['bpep', 'cpep', 'pepmerge']."
+        )
             
     # Meta output
     df = pd.DataFrame(all_results)

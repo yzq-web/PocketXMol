@@ -74,7 +74,7 @@ PEPDESIGN_SETTINGS = {
 _TRAIN_DICT = {}
 
 
-def register_transforms(name: str):
+def register_transforms(name: str): # 将transform类注册到_TRAIN_DICT字典
     """Decorator to register transform classes by name.
     
     Args:
@@ -89,7 +89,7 @@ def register_transforms(name: str):
     return decorator
 
 
-def get_transforms(config, *args, **kwargs):
+def get_transforms(config, *args, **kwargs): # 通过config完成transform类的实例化
     """Factory function to instantiate transforms from config.
     
     Args:
@@ -712,10 +712,10 @@ class FeaturizePocket(object):
 class FeaturizeMol(object):
     def __init__(self, config):
         super().__init__()
-        atomic_numbers = config.chem.atomic_numbers
-        mol_bond_types = config.chem.mol_bond_types
-        use_mask_node = config.use_mask_node
-        use_mask_edge = config.use_mask_edge
+        atomic_numbers = config.chem.atomic_numbers # [6, 7, 8, 9, 15, 16, 17, 5, 35, 53, 34]
+        mol_bond_types = config.chem.mol_bond_types # [1, 2, 3, 4]
+        use_mask_node = config.use_mask_node # True
+        use_mask_edge = config.use_mask_edge # True
         
         self.atomic_numbers = torch.LongTensor(atomic_numbers)
         self.mol_bond_types = torch.LongTensor(mol_bond_types)

@@ -1,3 +1,5 @@
-db,accept_ratio_mean,favoured_ratio_mean,accept_ratio_best_cfd,favoured_ratio_best_cfd
-bpep,72.44%,53.08%,81.74%,62.96%
-pepbdb,72.59%,53.69%,77.08%,61.26%
+db,accept_ratio_mean,favoured_ratio_mean,accept_ratio_best_cfd,favoured_ratio_best_cfd,accept_ratio_gt,favoured_ratio_gt
+bpep,72.44%,53.08%,81.74%,62.96%,99.11%,93.74%
+cpep,68.78%,46.17%,77.03%,58.11%,100.00%,93.40%
+pepbdb,72.59%,53.69%,77.08%,61.26%,99.60%,94.07%
+pepmerge,71.39%,51.23%,80.00%,63.59%,98.77%,93.14%

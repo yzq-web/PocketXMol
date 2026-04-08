@@ -176,7 +176,7 @@ class AdvanceScaler(nn.Module):
         self.b = 0.5 * (A0 + A1 - self.a)
         
     def __call__(self, x):
-        x = 2 * x - 1
+        x = 2 * x - 1  # step [0, 1] -> x [-1, 1]
         return self.a * torch.sigmoid(- self.k * x) + self.b
 
 
