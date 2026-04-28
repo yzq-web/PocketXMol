@@ -232,5 +232,6 @@ def pyrosetta_interface_energy(pdb_path, receptor_chains, ligand_chains, return_
     mover.set_pack_separated(True)
     mover.apply(pose)
     if return_dict:
-        return pose.scores
+        # Convert to plain Python types for safe serialization across processes.
+        return {str(k): float(v) for k, v in pose.scores.items()}
     return pose.scores['dG_separated']

@@ -14,8 +14,8 @@ import pandas as pd
 from Bio.PDB import Selection
 from Bio.PDB.PDBParser import PDBParser
 from Bio.PDB import PDBIO
-from distrun.api.joblib import Parallel as d_Parallel
-from distrun.api.joblib import delayed as d_delayed
+# from distrun.api.joblib import Parallel as d_Parallel
+# from distrun.api.joblib import delayed as d_delayed
 from joblib import Parallel, delayed
 
 import gzip
@@ -174,7 +174,9 @@ class RosettaSession:
         
     @property
     def _database(self, ):
-        return 'ROSETTA_DATABASE_PATH'
+        rose_db = '/usr/local/src/rosetta_src_2021.16.61629_bundle/main/database'
+        assert os.path.exists(rose_db)
+        return rose_db # 'ROSETTA_DATABASE_PATH'
 
     def pep_dock(self, mode, name, raw_pdb_path, nstruct, rec_chain='R'):
         assert mode in [
@@ -247,11 +249,11 @@ class RosettaSession:
 
         headers = lines[1].split()
         results_list = []
-        for line in lines[2:]:
+        for line in lines[2:]: # one line for one pdb result
             line = line.split()
             this_data = {}
             this_data['in_pdb'] = self.pdb_names[0]
-            for col_index in [-1, 1, 27]:
+            for col_index in [-1, 1, 27]: # -1: description (pdb result name), 1: total_score
                 key = headers[col_index]
                 value = line[col_index]
                 this_data[key] = value
@@ -493,7 +495,7 @@ def pep_score(mode, input_dir, output_dir, replace=False, n_proc=1, pass_list=No
             return 
 
         with RosettaSession() as session:
-            session.store_pdb(pdbname, pdb_path)
+            session.store_pdb(pdbname, pdb_path) # 1. copy pdb into pdb_path, 2. add pdb info self.pdb_names
             nstruct = 1  # not support nstruct > 1
             if mode == 'score_only':
                 name_list = session.pep_dock('flexpep_score_only', pdbname, pdb_path, nstruct=nstruct)
@@ -505,7 +507,7 @@ def pep_score(mode, input_dir, output_dir, replace=False, n_proc=1, pass_list=No
                 name_list = []
                 for filename in prename_list:
                     name_list += session.pep_dock('pep_refine', filename, pdb_path, nstruct=nstruct)
-            # choose the one with best score
+            # choose the one with best score (min total_score)
             score_list = session._parse_pep_score('score.sc')
             if len(score_list) == 0:
                 return []
@@ -514,10 +516,10 @@ def pep_score(mode, input_dir, output_dir, replace=False, n_proc=1, pass_list=No
             score_list = [s for s in score_list if float(s['total_score']) <= min_score]
             name_list = [s['description'] for s in score_list]
             if mode == 'refine_score':
-                # copy pdb file
+                # copy pdb file with best score
                 session.copy_out_pdbs(output_dir, name_list)
             
-        # save score
+        # save best score
         with open(output_path, 'wb') as f:
             pickle.dump(score_list[0], f)
         return score_list

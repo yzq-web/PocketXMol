@@ -210,26 +210,50 @@ if __name__ == '__main__':
     # parser.add_argument('--save_pdb', type=bool, default=False)
     args = parser.parse_args()
     
-    if args.exp_name and args.result_root:
-        gen_path = get_dir_from_prefix(args.result_root, args.exp_name)
-        print('gen_path:', gen_path)
-        complex_dir = os.path.join(gen_path, 'complex')
-        foldx_dir = os.path.join(gen_path, 'foldx')
-    else:
-        complex_dir = args.complex_dir
-        foldx_dir = args.foldx_dir
-    
+    # if args.exp_name and args.result_root:
+    #     gen_path = get_dir_from_prefix(args.result_root, args.exp_name)
+    #     print('gen_path:', gen_path)
+    #     complex_dir = os.path.join(gen_path, 'complex')
+    #     foldx_dir = os.path.join(gen_path, 'foldx')
+    # else:
+    #     complex_dir = args.complex_dir
+    #     foldx_dir = args.foldx_dir
+
+    complex_dir = 'AR2mini/AR2mini_if_opt/pdb'
+    foldx_dir = 'AR2mini/foldx_AR2mini_if_opt'
+    args.num_workers = 60 # 112 cores in node0
+    args.chain_tuple = 'A,B' # A: protein(receptor), B: peptide(ligand), 顺序分先后: fetch_binding_affinity导出rec和lig的数据(group 1和group 2)
+    args.result_root = complex_dir
+    print('complex_dir:', complex_dir, 'foldx_dir:', foldx_dir, 'num_workers:', args.num_workers, 'chain_tuple:', args.chain_tuple)
+
     calc_foldx_score(complex_dir, foldx_dir, num_workers=args.num_workers, chain_tuple=args.chain_tuple)
     
-    # make df
-    df_foldx = []
+    # make energy df
+    df_energy = []
     for file in os.listdir(os.path.join(foldx_dir, 'energy')):
         if file.endswith('.pkl'):
             path = os.path.join(foldx_dir, 'energy', file)
             with open(path, 'rb') as f:
                 score = pickle.load(f)
-            df_foldx.append(score)
-    df_foldx = pd.DataFrame(df_foldx)
+            df_energy.append(score)
+    df_energy = pd.DataFrame(df_energy)
+    df_energy.to_csv(os.path.join(foldx_dir, 'energy.csv'), index=False)
+    print('Save energy scores to:', os.path.join(foldx_dir, 'energy.csv'))
+
+    # make stability df
+    df_stability = []
+    for file in os.listdir(os.path.join(foldx_dir, 'stability')):
+        if file.endswith('.pkl'):
+            path = os.path.join(foldx_dir, 'stability', file)
+            with open(path, 'rb') as f:
+                score = pickle.load(f)
+            df_stability.append(score)
+    df_stability = pd.DataFrame(df_stability)
+    df_stability.to_csv(os.path.join(foldx_dir, 'stability.csv'), index=False)
+    print('Save stability scores to:', os.path.join(foldx_dir, 'stability.csv'))
+
+    df_foldx = pd.merge(df_energy, df_stability, on='filename', how='left')
     df_foldx.to_csv(os.path.join(foldx_dir, 'foldx.csv'), index=False)
+    print('Merge energy and stability scores to:', os.path.join(foldx_dir, 'foldx.csv'))
     
     print('Done.')
