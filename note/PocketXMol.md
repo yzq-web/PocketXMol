@@ -38,7 +38,7 @@ The generated peptide sequences were annotated by Open Babel based on side-chain
 python extensions/pdb_download.py 
 ```
 
-1. 对原始PDB数据进行处理，整理成PocketXMol中`apep` / `pepbdb`数据集的数据格式
+2. 对原始PDB数据进行处理，整理成PocketXMol中`apep` / `pepbdb`数据集的数据格式
 
 ```Bash
 data_train/
@@ -51,7 +51,8 @@ data_train/
         └── peptides/            # pdb of peptides (ligand)
 ```
 
-1. PDB预处理：`extensions/pdb_chain_extract.py`
+3. PDB预处理：`extensions/pdb_chain_extract.py`
+
    1. Remove
       1. 去除PDB中的氢原子
       2. 去除PDB中的水分子
@@ -63,14 +64,19 @@ data_train/
       3. 部分PDB具有多种构象（含有多个`MODEL`，例如），只保留了第1个MODEL
    3. 识别PDB中的 peptide chain 和 protein chain，分别存储成2个PDB文件
       1. 根据长度区分 peptide 和 protein（Default：residue count < 50）
+
    4. 输出相关的meta信息
+
    5. Limitation
       1. `pdb_chain_extract.py`默认一个pdb中只含有一个Peptide和一个Protein，目前可以满足对`bpep`和`cpep`的分析需求
       2. 后续如需处理一个pdb中含有多个Peptide和Protein的样本，再通过contact_res进行完善
-2. sdf文件处理：`extensions/pdb_to_sdf.py`
+
+4. sdf文件处理：`extensions/pdb_to_sdf.py`
+
    1. 根据peptide的pdb生成sdf文件
    2. 根据sdf文件生成mol相关的meta（Source：`process/make_mol_meta.py`）
-3. PDB数据质控：`extensions/pbd_process.py`
+
+5. PDB数据质控：`extensions/pbd_process.py`
    1. 功能：
       - 将Data Processing中的部分质控前置
       - 输出多肽数据集csv文档：meta_uni_full.csv
@@ -103,7 +109,7 @@ python extensions/pdb_to_sdf.py --db_name bpep
 python extensions/pbd_process.py --db_name bpep
 
 # PepMerge
-python ~/PocketXMol/extensions/convert_pepmerge_to_bpep.py --overwrite # 转换成PocketXMol中的PepBDB,bpep数据结构
+python extensions/convert_pepmerge_to_bpep.py --overwrite # 转换成PocketXMol中的PepBDB,bpep数据结构
 python extensions/pdb_chain_extract.py --db_name pepmerge
 python extensions/pdb_to_sdf.py --db_name pepmerge --from_meta
 python extensions/pbd_process.py --db_name pepmerge --no_len_filter
@@ -307,7 +313,7 @@ Warning: X in peptide sequence: data_train/cpep/files/peptides/cpep_8cix_pep.pdb
 > - `pepbdb`的`pocmol10.lmdb` = `apep`的`pocmol10.lmdb`+`torsion.lmdb`+`decom.lmdb`
 > - `pepbdb`的`pocmol10.lmdb` = `apep`的`peptide.lmdb`
 
-**`pocmol10.lmdb`****：Pocket (.pdb) + Ligand (.sdf)**
+**`pocmol10.lmdb`** **：Pocket (.pdb) + Ligand (.sdf)**
 
 - scripts：`process/process_pocmol.py`
 - 存入的数据（**PocketMolData**）
@@ -363,7 +369,7 @@ db = LMDBDatabase(lmdb_path, readonly=True)
 db[data_id]
 ```
 
-**`peptide.lmdb`****：peptide (.pdb)**
+**`peptide.lmdb`** **：peptide (.pdb)**
 
 - scripts：`process/process_peptide_allinone.py`
 - 存入的数据
@@ -396,7 +402,7 @@ db = LMDBDatabase(lmdb_path, readonly=True)
 db[data_id]
 ```
 
-**`torsion.lmdb`****：Ligand (.sdf)**
+**`torsion.lmdb`** **：Ligand (.sdf)**
 
 - Scripts: `process/process_torsional_info.py`
 - 存入的数据
@@ -429,7 +435,7 @@ db = LMDBDatabase(lmdb_path, readonly=True)
 db[data_id]
 ```
 
-**`decom.lmdb`****：Ligand (.sdf)**
+**`decom.lmdb`** **：Ligand (.sdf)**
 
 - Scripts: `process/process_decompose_info.py`
 - 存入的数据
@@ -471,13 +477,11 @@ db[data_id]
 ## 前期准备
 
 1. 创建config文件
-
    1. Peptide Docking
       1. `bpep`：configs/sample/test/dock_bpep/base.yml
       2. `cpep`：configs/sample/test/dock_cpep/base.yml
-
+   
 2. 调整config中的参数
-
    1. `sample`
       1. batch_size = 20 # Optional：降低batch_size，防止CUDA out of memory
       2. **num_repeats = 200**
@@ -487,12 +491,11 @@ db[data_id]
       1. Peptide Docking：configs/sample/test/dock_pepbdb/base.yml
       2. Inverse Folding：configs/sample/test/pepinv_pepbdb/base.yml
       3. Peptide Design：configs/sample/test/pepdesign_pepbdb/base.yml
-
+   
 3. 根据config文件（base.yml）准备相关文件
-
    1. config中的数据格式（以pepbdb为例：configs/sample/test/dock_pepbdb/base.yml）
-
-      ```python
+   
+      ```bash
       data:
         dataset:
           root: ./data
@@ -504,32 +507,29 @@ db[data_id]
               pocmol10: pocmol10.lmdb
               peptide: peptide.lmdb
       ```
-
-      
-
+   
    2. assembly_path
-
       1. `pepbdb`
          1. dock_pepbdb.csv的列名：`data_id`,`data_task`,`db`,`split`
+         
       2. `bpep`和`cpep`按相同的格式准备
          1. `bpep`：test/assemblies/dock_bpep.csv
          2. `cpep`：test/assemblies/dock_cpep.csv
+         
       3. 运行：`extensions/make_test_assemblies.py`
-
-      ```python
-      # peptide docking
-      python extensions/make_test_assemblies.py --db_name bpep --data_task dock
-      python extensions/make_test_assemblies.py --db_name cpep --data_task dock
-      
-      # inverse folding / peptide design
-      python extensions/make_test_assemblies.py --db_name bpep --data_task pepdesign
-      python extensions/make_test_assemblies.py --db_name cpep --data_task pepdesign
-      ```
-
+   
+         ```bash
+         # peptide docking
+         python extensions/make_test_assemblies.py --db_name bpep --data_task dock
+         python extensions/make_test_assemblies.py --db_name cpep --data_task dock
+         
+         # inverse folding / peptide design
+         python extensions/make_test_assemblies.py --db_name bpep --data_task pepdesign
+         python extensions/make_test_assemblies.py --db_name cpep --data_task pepdesign
+         ```
+   
    3. dbs
-
       1. **`pepbdb`**：位于**`./data`**
-
          1. `proteins_combchain`：非必须
             1. 来自proteins中的pdb
             2. 变更：chain id变成R，atom index和residue index变成从1开始
@@ -540,8 +540,8 @@ db[data_id]
          3. `pocmol10.lmdb`
             1. 与`./data_train/pepbdb/lmdb/pocmol10.lmdb`比较
                1. 相同：数据类型和格式相同（keys和values）
-
-         ```python
+         
+         ```bash
          pepbdb
          ├── files
          │   ├── peptides
@@ -551,13 +551,15 @@ db[data_id]
              ├── peptide.lmdb
              └── pocmol10.lmdb
          ```
-
-      2. `bpep`和`cpep`
-
+         
+         
+         
+      3. `bpep`和`cpep`
+         
          1. 将./data_train中的相关数据复制至./data
          2. 更改peptide.lmdb以适配模型测试
             1. `peptide_pep_path`：将其中的`./data_train`更改为`./data`
-
+         
          ```bash
          cp -r ./data_train/bpep ./data
          cp -r ./data_train/cpep ./data
@@ -565,9 +567,8 @@ db[data_id]
          python extensions/make_test_lmdb.py --db_name bpep
          python extensions/make_test_lmdb.py --db_name cpep
          ```
-
+   
 4. 调整代码
-
    1. 添加db_name：`bpep`和`cpep`
       1. `utils/dataset.py`中的`get_data_key`函数
 
