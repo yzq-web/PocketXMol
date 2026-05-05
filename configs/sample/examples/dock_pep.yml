@@ -20,7 +20,7 @@ data:
 
 transforms:
   featurizer_pocket:
-    center: [7.9130, -7.3910, -25.9240]  # space center for denosing
+    center: [7.9130, -7.3910, -25.9240]  # space center for denosing, 如果不指定, 则使用pocket的中心点坐标
 
 
 

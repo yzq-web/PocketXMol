@@ -157,6 +157,11 @@ if __name__ == '__main__':
     parser.add_argument('--config_task', type=str, default='configs/sample/examples/dock_pep_know_some.yml', help='task config')
     parser.add_argument('--config_model', type=str, default='configs/sample/pxm.yml', help='model config')
     parser.add_argument('--outdir', type=str, default='./outputs_use')
+    parser.add_argument(
+        '--use_outdir_as_logdir',
+        action='store_true',
+        help='If set, write outputs directly into --outdir without timestamp suffix.',
+    )
     parser.add_argument('--device', type=str, default='cuda:0')
     parser.add_argument('--batch_size', type=int, default=0, help='batch size; by default use the value in the config file')
     parser.add_argument('--shuffle', type=bool, default=False)
@@ -186,7 +191,11 @@ if __name__ == '__main__':
 
     # # Logging
     log_root = args.outdir
-    log_dir = get_new_log_dir(log_root, prefix=config_name)
+    if args.use_outdir_as_logdir:
+        log_dir = log_root
+        os.makedirs(log_dir, exist_ok=True)
+    else:
+        log_dir = get_new_log_dir(log_root, prefix=config_name)
     logger = get_logger('sample', log_dir)
     # writer = torch.utils.tensorboard.SummaryWriter(log_dir)
     logger.info('Load from %s...' % config.model.checkpoint)
